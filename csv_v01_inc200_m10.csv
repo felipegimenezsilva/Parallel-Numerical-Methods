@@ -1,3 +1,4 @@
+Matrix order, Jacobi Sequential, Jacobi Paralell, Seidel Sequential, Seidel Parallel, Seidel Unstable
 1, 0.000500, 0.016400, 0.000400, 0.016600, 0.008500
 201, 3.911600, 1.247700, 3.081400, 2.916800, 1.055100
 401, 11.447700, 4.266700, 9.598300, 6.351200, 3.632500
