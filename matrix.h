@@ -1,3 +1,9 @@
+/*
+ * Felipe Gimenez
+ * 02 - 13 - 2019
+ * Algorithm to manage matrix and vectors. 
+ */
+
 #ifndef STDIO_H
 #include <stdio.h>
 #define STDIO_H
@@ -23,6 +29,10 @@
 #define abs(x) x<0 ? -x : x // abs function
 #define lim 1000 // limit to random (-lim,+lim)
 
+/*
+ * Result Class is used to store the answer (x0),
+ * xk is used temporarily, n is the vector length.
+ */
 class Result
 {
 	private:
@@ -32,6 +42,11 @@ class Result
 	private:
 	double *xk;
 	
+	/*
+	 * Constructor method
+	 * alloc all the vectors when the object is created
+	 * # to 'change' the length, need to create another Result
+	 */
 	public:
 	Result(int n)
 	{
@@ -42,6 +57,10 @@ class Result
 		assert(xk);	
 	}
 	
+	/*
+	 * Destructor Method
+	 * free all the vectors
+	 */
 	public:
 	~Result()
 	{
@@ -49,6 +68,10 @@ class Result
 		free(xk);
 	}
 	
+	/*
+	 * Reset all the vectors 
+	 * # N value not change
+	 */
 	public:
 	void reset()
 	{
@@ -60,6 +83,7 @@ class Result
 		}
 	}
 	
+	/* display x0 vector */
 	public:
 	void show()
 	{
@@ -69,12 +93,14 @@ class Result
 		}	
 	}
 	
+	// returns x0 pointer
 	public:
 	double* getX0()
 	{
 		return x0;
 	}
 	
+	// return xk pointer
 	public:
 	double * getXk()
 	{
@@ -82,6 +108,17 @@ class Result
 	}
 };
 
+
+/*
+ * Matrix class is used to:
+ *	alloc:
+ *		Matrix A (matrix)
+ *		Vector B (independent terms)
+ *	Randomize:
+ *		Diagonally Dominant matrix (A)
+ *		Vector (B)
+ *	Delete (A,B,...)
+ */
 class Matrix
 {
 
@@ -258,8 +295,15 @@ class Matrix
 	 		
 	 		// cleaning N
 	 		n = 0;
-	  }
+	  } 
 	  
+	  /*
+	   * Algorithm to Calc and show:
+	   *	A * X0
+	   * ---- note : A * X0 = B
+	   * ---- A and B is member of MATRIX
+	   * ---- X0 is member of RESULT
+	   */
 	  public:
 	  void mult(Result *r)
 	  {
