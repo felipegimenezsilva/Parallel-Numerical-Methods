@@ -2,6 +2,7 @@
  * Felipe Gimenez da Silva
  * 02 - 13 - 2019
  * algorithm: How to use CompareMethods object
+ * to compile: g++ exemple.cpp -fopenmp
  */
 
 #include "methods.h"
