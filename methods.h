@@ -1,6 +1,15 @@
-// compile with g++ name.cpp -fopenmp
-#include <sys/time.h>
+/*
+ * Felipe Gimenez
+ * 02 - 13 - 2019
+ * Algorithm to:
+ * 		create a Queue of methods to compare
+ * 		calc the average of time elapsed to solve linear problems
+ */
 
+#ifndef TIME_H
+#include <sys/time.h>
+#define TIME_H
+#endif
 
 #ifndef VECTOR
 #define VECTOR
@@ -32,9 +41,9 @@
 #define METHODS_H
 
 /* 
- * this section contain all configurations of linear system
+ * this section contains all configurations of linear system
  */
-#define ITER 500 // max iteration to solve
+#define ITER 1000 // max iteration to solve
 #define ERRORMAX 0.0001 // max error
 
 class Methods
@@ -107,44 +116,44 @@ class CompareMethods
 				// this loop solve all testList
 				for(int p = 0; p < testList.size(); p++)
 				{
-					//matrix->show();puts("------------------");
 					// make changes if necessary
 					testList[p]->changes(matrix);
-					//matrix->show();puts("------------------");
 					
 					// start chronometer
-	double ti,tf,dt;
-  	dt = ti = tf  = 0;
-  	struct timeval tii,tff;
-  	gettimeofday(&tii,NULL);
+					double ti,tf,dt;
+					dt = ti = tf  = 0;
+					struct timeval tii,tff;
+					gettimeofday(&tii,NULL);
 
-					
+					// start to solve
 					testList[p]->solve(matrix,result);
 	
-	gettimeofday(&tff,NULL);
-  	tf = (double)tff.tv_usec +((double)tff.tv_sec*(1000000.0));
-  	ti = (double)tii.tv_usec +((double)tii.tv_sec*(1000000.0));
-  	dt=(tf-ti)/1000;
-  	//printf(" ---> time : %lf\n",dt);
-	average[p]+=dt;
-					// end chronometer
+					// stop chronometer
+					gettimeofday(&tff,NULL);
+					tf = (double)tff.tv_usec +((double)tff.tv_sec*(1000000.0));
+					ti = (double)tii.tv_usec +((double)tii.tv_sec*(1000000.0));
+					dt=(tf-ti)/1000;
 					
-					// undo changes if necessary
+					// add the time elapsed (to calc the average)
+					average[p]+=dt;
 					
-				//	result->show();
+					// reset all the vectors of result class
 					result->reset();
+					
+					// undo matrix changes if necessary
 					testList[p]->changes(matrix);
-				//	matrix->mult(result);
-				//	puts("----------------------------");
 				}
 			}
+			// print size of matrix
 			printf("%i, ",i);
 				for(int j = 0 ; j < testList.size(); j++)
 				{
+					// calc the average and show
 					average[j] /= repeat;
 					printf("%lf%s",average[j],j==testList.size()-1?"\n":", ");
 					average[j] = 0.0;
-				}
+				
+			// deleting objects to recreate  with new size
 			delete matrix;
 			delete result;
 		}
