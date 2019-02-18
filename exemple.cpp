@@ -11,12 +11,12 @@ int main()
 {
 	/* creating object pointer
 	 * parameters:
-	 * 		initial matrix size ( 1 )
+	 * 		initial matrix size 	( 1 )
 	 *		increment size		(200)
-	 *		average of			( 5 )
+	 *		average of		( 5 )
 	 */
 	//CompareMethods *compare = new CompareMethods(1,1,1);
-	CompareMethods compare(1,50,10);
+	CompareMethods compare(1,200,5);
 	
 	/*
 	 * adding list of (objects) Methods to compare
