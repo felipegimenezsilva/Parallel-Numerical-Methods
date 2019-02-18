@@ -15,23 +15,27 @@ int main()
 	 *		increment size		(200)
 	 *		average of			( 5 )
 	 */
-	CompareMethods *compare = new CompareMethods(1,200,5);
+	//CompareMethods *compare = new CompareMethods(1,1,1);
+	CompareMethods compare(1,50,10);
 	
 	/*
 	 * adding list of (objects) Methods to compare
 	 *		# to create new object, put your class 
 	 *		# in methods.h
 	 */
-	compare->add(new JacobiSequential());
-	compare->add(new JacobiParallel());
-	compare->add(new SeidelSequential());
-	compare->add(new SeidelParallel());
-	compare->add(new SeidelUnstable());
+	
+	compare.add(new JacobiSequential());	// gauss jacobi sequential
+	compare.add(new JacobiParallel());	// gauss jacobi parallel
+	compare.add(new SeidelSequential()); 	// gauss seidel sequential
+	compare.add(new SeidelParallel());	// gauss seidel parallel 	(change matrix)
+	compare.add(new SeidelSemiParallel());	// gauss seidel semi parallel
+	compare.add(new SeidelParallel2());	// gauss seidel parallel 2 	(no change matrix)
+	compare.add(new SeidelUnstable());	// gauss seidel unistable	(fast and random)
+	
 	
 	/*
 	 * starting comparation
-	 * 		# this is a loop, whitout END.
+	 * 	# this is a loop, whitout END.
 	 */
-	compare->start();
-
+	compare.start();
 }
