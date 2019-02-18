@@ -27,7 +27,7 @@
 #ifndef MATRIX_H
 #define MATRIX_H
 #define abs(x) x<0 ? -x : x // abs function
-#define lim 1000 // limit to random (-lim,+lim)
+#define lim 1 // limit to random (-lim,+lim)
 
 /*
  * Result Class is used to store the answer (x0),
@@ -55,6 +55,7 @@ class Result
 		xk = (double*)malloc(sizeof(double)*n);
 		assert(x0);
 		assert(xk);	
+		reset();
 	}
 	
 	/*
@@ -76,6 +77,7 @@ class Result
 	void reset()
 	{
 		#pragma omp parallel for
+		#pragma omp nowait
 		for(int i=0; i<n ;i++)
 		{
 			xk[i] = 0;
@@ -176,10 +178,10 @@ class Matrix
 	}
 	
 	/*
-	 * algorithm to fill the matrix with random numbers
+	 * algorithm to fill the matrix with pseudo random numbers
 	 * and ajust the result to get a diagonally dominant matrix
 	 */
-	private:
+	public:
 	void values()
 	{
 		// choose the type of distribution (uniform end real)
@@ -196,7 +198,7 @@ class Matrix
   			// randomizing numbers
   			for(int j = 0 ; j < n; j++)
   			{
-  				a[i][j] = distribution(generator);
+  				a[i][j] = (double)distribution(generator);
   				if(i!=j)
   				{
   					// add all line's elements if i!=j
@@ -208,14 +210,48 @@ class Matrix
   			a[i][i] = abs(a[i][i]);
   			if(a[i][i]<s)
   			{
-  				a[i][i] /= 100;
+  				a[i][i] /= i%5 + i/n + 0.1;
   				a[i][i] += s;  
   			}
+  			
   			// randomizing a result to line i	
   			b[i] = distribution(generator);
   		}
 	}
+	/*
+	 * I think is better use random values, but
+	 * randomize completely not sure of convergence
+	 */
+	 /*
+	public:
+	void values2()
+	{
 	
+		std::random_device generator;
+  		std::uniform_real_distribution<double> dist1(-lim,lim);
+  		//std::bernoulli_distribution dist1(lim);
+	
+		double *x0 = (double*)malloc(sizeof(double)*n);
+		for(int i = 0; i<n ; i++)
+		{
+			x0[i] = dist1(generator);
+		}
+		for(int i = 0; i<n; i++)
+		{
+			for(int j=0; j<n; j++)
+			{
+				if(i!=j)
+				{
+					a[i][j] = dist1(generator);
+					b[i] += x0[j] * a[i][j];
+				}
+			}
+			a[i][i] = 1 + i;
+			b[i] += a[i][i] * x0[i];
+		}
+		free(x0);
+	}*/
+
 	/*
 	 * algorithmm to return the matrix's order
 	 */
@@ -259,21 +295,34 @@ class Matrix
 	  public:
 	  void show()
 	  {	
-	  		FILE *arq = fopen("matrix","w");
-	  		fprintf(arq,"%i\n",n);
 	  		for(int i = 0 ; i  < n ; i++)
 	  		{
 	  			for(int j = 0 ; j < n ; j++)
 	  			{
 	  				printf("%f ",a[i][j]);
-	  				fprintf(arq,"%.16f\n",a[i][j]);
 	  			}
 	  			printf(" = %f\n",b[i]);
 	  		}
-	  		
-	  		for(int i=0;i<n;i++)
-	  			fprintf(arq,"%.16f\n",b[i]);	
-	  		fclose(arq);
+	  }
+	  
+	  /*
+	   * algorithm to save a matrix (.txt)
+	   */
+	  public:
+	  void save()
+	  {	
+	  		FILE *file = fopen("txt_mat.txt","w");
+	  		for(int i = 0 ; i  < n ; i++)
+	  		{
+	  			for(int j = 0 ; j < n ; j++)
+	  			{
+	  				fprintf(file,"%f ",a[i][j]);
+	  			}
+	  			fprintf(file,"\n");
+	  		}
+	  		for(int i=0; i<n ; i++)
+	  			fprintf(file,"%f\n",b[i]);
+	  		fclose(file);
 	  }
 	  
 	  /*
@@ -318,7 +367,7 @@ class Matrix
 	  			printf("%f\n",s);
 	  		}
 	  		
-	  }	  	
+	  }
+	  
 };
 #endif
-
