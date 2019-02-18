@@ -43,19 +43,24 @@
 /* 
  * this section contains all configurations of linear system
  */
-#define ITER 1000 // max iteration to solve
+#define ITER 10000 // max iteration to solve
 #define ERRORMAX 0.0001 // max error
 
 class Methods
 {
+
 	// used only by specifications
 	public:
-	virtual void solve(Matrix *matrix, Result *result)
+	virtual int solve(Matrix *matrix, Result *result)
 	{}
 	
 	// apply little and especific changes on matrix
 	public:
 	virtual void changes(Matrix *matrix)
+	{}
+	
+	public:
+	virtual void save(int n,double time, int k)
 	{}
 	
 };
@@ -103,10 +108,12 @@ class CompareMethods
 		
 		Matrix *matrix;
 		Result *result;
-	
+		int k;
+
 		// this loop reSize the problem
 		for(int i = ini; 1 ; i += step )
 		{
+
 			matrix = new Matrix(i);
 			result = new Result(i);
 			
@@ -126,13 +133,16 @@ class CompareMethods
 					gettimeofday(&tii,NULL);
 
 					// start to solve
-					testList[p]->solve(matrix,result);
+					k = testList[p]->solve(matrix,result);
 	
 					// stop chronometer
 					gettimeofday(&tff,NULL);
 					tf = (double)tff.tv_usec +((double)tff.tv_sec*(1000000.0));
 					ti = (double)tii.tv_usec +((double)tii.tv_sec*(1000000.0));
 					dt=(tf-ti)/1000;
+					
+					// saving test : order , time , k_iteration
+					testList[p]->save(i,dt,k);
 					
 					// add the time elapsed (to calc the average)
 					average[p]+=dt;
@@ -143,28 +153,30 @@ class CompareMethods
 					// undo matrix changes if necessary
 					testList[p]->changes(matrix);
 				}
+				matrix->values();
 			}
-			// print size of matrix
+			//print size of matrix
 			printf("%i, ",i);
-				for(int j = 0 ; j < testList.size(); j++)
-				{
-					// calc the average and show
-					average[j] /= repeat;
-					printf("%lf%s",average[j],j==testList.size()-1?"\n":", ");
-					average[j] = 0.0;
-				
+			for(int j = 0 ; j < testList.size(); j++)
+			{
+				// calc the average and show
+				average[j] /= repeat;
+				printf("%lf%s",average[j],j==testList.size()-1?"\n":", ");
+				average[j] = 0.0;
+			}
 			// deleting objects to recreate  with new size
 			delete matrix;
 			delete result;
 		}
 	}
+			
 };
 
 class JacobiSequential:public Methods
 {	
 	// solve the linear system using Jacobi Sequencial
 	public:
-	void solve(Matrix *matrix, Result *result)
+	int solve(Matrix *matrix, Result *result)
 	{
 		// initial values
 		double **a = matrix->getA();
@@ -181,7 +193,7 @@ class JacobiSequential:public Methods
     		again = false;
     		for( int i = 0 ; i < n ; i++ )
     		{
-      		xk[i] = b[i] / a[i][i];
+      		xk[i] = b[i] / a[i][i] ;
       		for( int j=0;j<n; j++)
         			if( i != j ) xk[i] -= a[i][j] * x0[j] / a[i][i];
     		}
@@ -195,15 +207,24 @@ class JacobiSequential:public Methods
     		if(!again) break;
     		k++;
   		}
-	//	printf("Jacobi sequencial k=%i\n",k);
+		return k;
 	}	
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("jsequ.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
 };
 
 class JacobiParallel:public Methods
 {
+
 	// solve the linear system using Jacobi Parallel
 	public:
-	void solve(Matrix *matrix, Result *result)
+	int solve(Matrix *matrix, Result *result)
 	{
 		// initial values
 		double **a = matrix->getA();
@@ -219,14 +240,15 @@ class JacobiParallel:public Methods
   		{
     		again = false;
     		#pragma omp parallel for
+    		#pragma omp nowait
     		for( int i = 0 ; i < n ; i++ )
     		{
-      		xk[i] = b[i] / a[i][i];
+      		xk[i] = b[i] / a[i][i] ;
       		for( int j=0;j<n; j++)
         			if( i != j ) xk[i] -= a[i][j] * x0[j] / a[i][i];
     		}
-			
 			#pragma omp parallel for
+			#pragma omp nowait
     		for( int i = 0 ; i < n ; i++)
     		{
     			double err = abs((xk[i]-x0[i])/xk[i]);
@@ -237,15 +259,25 @@ class JacobiParallel:public Methods
     		if(!again) break;
     		k++;
   		}
-	//	printf("Jacobi Parallel k=%i\n",k);
-	}	
+		return k;
+	}
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("jpara.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
+	
 };
 
 class SeidelSequential:public Methods
 {
+
 	// solve the linear system using Seidel Sequential
 	public:
-	void solve(Matrix *matrix, Result *result)
+	int solve(Matrix *matrix, Result *result)
 	{
 		// initial values
 		double **a = matrix->getA();
@@ -267,10 +299,7 @@ class SeidelSequential:public Methods
       		for( int j=0;j<n; j++)
         			if( i != j ) xk[i] -= a[i][j] * xk[j] / a[i][i];
     			xk[i] += b[i] / a[i][i];
-    		}
-
-    		for( int i = 0 ; i < n ; i++)
-    		{
+    		
     			double err = abs((xk[i]-x0[i])/xk[i]);
       		if( err > ERRORMAX)
         			again = true;
@@ -279,13 +308,21 @@ class SeidelSequential:public Methods
     		if(!again) break;
     		k++;
   		}
-	//	printf("Seidel Sequential k=%i\n",k);
+		return k;
 	}
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("ssequ.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
+	
 };
 
 class SeidelParallel:public Methods
 {
-
 	public:
 	void changes(Matrix *matrix)
 	{
@@ -293,9 +330,13 @@ class SeidelParallel:public Methods
 		double **a = matrix->getA();
 		double *diag = matrix->getDiag();
 		
-		for(int i = 1 ; i < n ; i++ )
+		// algorithm to change element position
+		// i -> n - j - 1
+		// j -> n - i - 1
+		int x = n;
+		for(int j = 0 ; j < x; j++ , x-- )
 		{
-			for(int j = 0 ; j < i ; j++)
+			for(int i = j+1 ; i < x ; i++)
 			{
 				double temp = a[i][j];
 				a[i][j] = a[n-j][n-i];
@@ -309,9 +350,9 @@ class SeidelParallel:public Methods
 		}
 	}
 
-	// solve the linear system using Seidel Sequential
+	// solve the linear system using Seidel Parallel with changes
 	public:
-	void solve(Matrix *matrix, Result *result)
+	int solve(Matrix *matrix, Result *result)
 	{
 		// initial values
 		double *diag = matrix->getDiag();
@@ -330,26 +371,28 @@ class SeidelParallel:public Methods
     		again = false;
     		
     		#pragma omp parallel for
+    		#pragma omp nowait
     		for( int i = 0 ; i < n ; i++ )
     		{
-      		xk[i] = b[i] / a[i][i];
+      		xk[i] = b[i] / a[i][i] ;
       		for( int j = i+1 ; j < n ; j++)
         			xk[i] -= (a[i][j] * x0[j]) / a[i][i];
     		}
-    		    		
     		
     		for( int i = n-1 ; i > 0 ; i-- )
     		{
     			#pragma omp parallel for
+    			#pragma omp nowait
       		for( int j = i-1 ; j >= 0 ; j--)
       		{ 
       			// changedI and changedJ
       			int cI = n - j - 1 , cJ = n - i - 1;
         			xk[cI] -= (a[i][j] * xk[cJ]) / diag[cI];
       		}
-    		}
+    		}  		
     		
 			#pragma omp parallel for
+			#pragma omp nowait
     		for( int i = 0 ; i < n ; i++)
     		{
     			double err = abs((xk[i]-x0[i])/xk[i]);
@@ -360,16 +403,152 @@ class SeidelParallel:public Methods
     		if(!again) break;
     		k++;
   		}
-	//	printf("Seidel Parallel k=%i\n",k);
+		return k;
 	}
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("schan.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
+	
+};
+
+class SeidelParallel2:public Methods
+{	
+	// solve the linear system using Seidel Parallel with changes
+	public:
+	int solve(Matrix *matrix, Result *result)
+	{
+		// initial values
+		double *diag = matrix->getDiag();
+		double **a = matrix->getA();
+		double *b = matrix->getB();
+		int n = matrix->getN();
+		double *x0 = result->getX0();
+		double *xk = result->getXk();
+		int k = 0;
+		bool again;
+		// end initial values
+		
+
+  		while( k < ITER )
+  		{
+    		again = false;
+    		
+    		#pragma omp parallel for
+    		#pragma omp nowait
+    		for( int i = 0 ; i < n ; i++ )
+    		{
+      		xk[i] = b[i] / a[i][i] ;
+      		for( int j = i+1 ; j < n ; j++)
+        			xk[i] -= (a[i][j] * x0[j]) / a[i][i];
+    		}
+    		
+    		for( int j=0 ; j<n ; j++ )
+    		{
+    			#pragma omp parallel for
+    			#pragma omp nowait
+      		for(int i=j+1; i<n ; i++)
+      		{ 
+      			xk[i] -= (a[i][j] * xk[j]) / a[i][i];
+      		}
+    		}  		
+    		
+			#pragma omp parallel for
+			#pragma omp nowait
+    		for( int i = 0 ; i < n ; i++)
+    		{
+    			double err = abs((xk[i]-x0[i])/xk[i]);
+      		if( err > ERRORMAX)
+        			again = true;
+      		x0[i] = xk[i];
+    		}
+    		if(!again) break;
+    		k++;
+  		}
+		return k;
+	}
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("snoch.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
+	
+};
+
+
+class SeidelSemiParallel:public Methods
+{
+
+	// solve the linear system using Seidel Parallel
+	public:
+	int solve(Matrix *matrix, Result *result)
+	{
+		// initial values
+		double **a = matrix->getA();
+		double *b = matrix->getB();
+		int n = matrix->getN();
+		double *x0 = result->getX0();
+		double *xk = result->getXk();
+		int k = 0;
+		bool again;
+		// end initial values
+		
+
+  		while( k < ITER )
+  		{
+    		again = false;
+    		#pragma omp parallel for
+      	#pragma omp nowait
+      	// U matrix -> parallel
+    		for( int i = 0 ; i < n ; i++ )
+    		{
+      		xk[i] = b[i] / a[i][i];
+      		for( int j=i+1;j<n; j++)
+        			xk[i] -= a[i][j] * x0[j] / a[i][i];
+    		}
+    		// L matrix -> sequential
+	 		for(int i=1;i<n;i++)
+	 			for(int j=0;j<i;j++)
+	 				xk[i] -= a[i][j] * xk[j] / a[i][i];
+    		
+    		// Absolute error -> parallel
+    		#pragma omp parallel for
+    		#pragma om nowait
+    		for(int i=0;i<n;i++)
+    		{
+    			double err = abs((xk[i]-x0[i])/xk[i]);
+      		if( err > ERRORMAX)
+        			again = true;
+      		x0[i] = xk[i];
+    		}
+    		if(!again) break;
+    		k++;
+  		}
+		return k;
+	}
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("ssemi.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
+	
 };
 
 class SeidelUnstable:public Methods
 {
-
 	// solve the linear system using Seidel Sequential
 	public:
-	void solve(Matrix *matrix, Result *result)
+	int solve(Matrix *matrix, Result *result)
 	{
 		// initial values
 		double *diag = matrix->getDiag();
@@ -402,8 +581,17 @@ class SeidelUnstable:public Methods
     		if(!again) break;
     		k++;
   		}
-	//	printf("Seidel Parallel k=%i\n",k);
+		return k;
 	}
+	
+	public:
+	void save(int n,double time, int k)
+	{
+		FILE *file = fopen("sunst.csv","a");
+		fprintf(file,"%i, %lf, %i\n",n,time,k);
+		fclose(file);
+	}
+	
 };
 
 #endif
