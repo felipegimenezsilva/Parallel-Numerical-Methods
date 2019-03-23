@@ -2,4 +2,4 @@
 Felipe Gimenez da Silva
 
 Algorithm to compare numerical methods (Gauss Jacobi and Gauss Seidel),
-using implementation sequential and parallel (C++ and OpenMP).
+using sequential and parallel implementation (C++ and OpenMP).
