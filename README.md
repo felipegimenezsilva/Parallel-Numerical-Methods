@@ -1,4 +1,4 @@
-# Parallel_Methods
+# Parallel Numerical Methods
 Felipe Gimenez da Silva
 
 Algorithm to compare numerical methods (Gauss Jacobi and Gauss Seidel),
